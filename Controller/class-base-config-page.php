@@ -14,6 +14,7 @@ Class Base_Config_Page
     {
         add_action('admin_menu', array($this, 'base_config_page'), 10);
         add_action('admin_enqueue_scripts', array($this, 'register_plugin_styles'), 10);
+        add_action( 'init',  array($this,'add_images'), 10 );
     }
 
     public function base_config_page()
@@ -27,6 +28,14 @@ Class Base_Config_Page
             wp_die(__('Sem permissões para acessar esta página.'));
         }
 
+       // delete_option( 'images-size' );
+
+        $images = get_option( 'images-size', array() );
+
+        if(!$images){
+            add_option( 'images-size', array() );
+        }
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($_POST['procurar']) && $_POST['procurar'] != null) {
                 $args = $_POST['procurar'];
@@ -36,9 +45,15 @@ Class Base_Config_Page
         require_once(plugin_dir_path(__FILE__) . "../View/image-size.php");
 
         if (isset($_POST['submit'])) {
-            $this->add_images($_POST['nomeImagem'], $_POST['larguraSize'], $_POST['alturaSize']);
+
+            $images[ $_POST['nomeImagem']] = array('nome' => $_POST['nomeImagem'],'largura' =>$_POST['larguraSize'], 'altura' => $_POST['alturaSize'] );
+            update_option( 'images-size', $images );
         }
 
+
+        print '<pre>'; 
+        print_r( $this->add_images() ); 
+        print '</pre>';
 
 
 
@@ -57,10 +72,20 @@ Class Base_Config_Page
     }
 
 
-    public function add_images($name, $width, $height)
+    public function add_images()
     {
-        add_image_size($name, $width, $height, 'center');
 
+        $images_size = get_option( 'images-size');
+        global $_wp_additional_image_sizes;
+
+
+        if($_wp_additional_image_sizes == null){
+            $images = array_merge(array(), $images_size);
+        }elseif (is_array($_wp_additional_image_sizes)) {
+            $images = array_merge($_wp_additional_image_sizes, $images_size);
+        }
+
+        return $images;
     }
 
     
